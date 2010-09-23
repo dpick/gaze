@@ -1,22 +1,11 @@
 #!/usr/bin/env ruby
+require 'rubygems'
 require 'sinatra'
+require 'maruku'
 
 set :run, true
 
 configure do
-  # Format options
-  {:Markdown => 'maruku', :Textile => 'RedCloth'}.each do |name, gem|
-    begin
-      require "#{gem}"
-    rescue LoadError => e
-      puts <<-MSG
-To format #{name} as well:
-$ gem install #{gem}
-It is not needed though.
-MSG
-    end
-  end
-
   Dir.chdir ARGV[0] if ARGV[0]
 end
 
@@ -26,7 +15,7 @@ helpers do
   end
 
   def pages
-    (Dir["*.md"] + Dir["*.markdown"] + Dir["*.textile"]).sort
+    Dir["*.md"].sort
   end
 end
 
@@ -44,16 +33,11 @@ end
 get '/pages/:page.:ext' do
   begin
     filename = "#{params[:page]}.#{params[:ext]}"
+
     File.open(filename) do |file|
-      @output = case params[:ext]
-                when "markdown", "md"
-                  Maruku.new(file.read).to_html
-                when "textile"
-                  RedCloth.new(file.read).to_html
-                else
-                  file.read
-                end
+      @output = Maruku.new(file.read).to_html
     end
+
     haml :page
   rescue
     raise Sinatra::NotFound
